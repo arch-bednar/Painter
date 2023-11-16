@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{7D0B540A-B801-4EB6-998B-FB5628F78F55}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="ProjectPainter.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="ProjectPainter">
+        <MSBuild Projects="ProjectPainter.dproj"/>
+    </Target>
+    <Target Name="ProjectPainter:Clean">
+        <MSBuild Projects="ProjectPainter.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ProjectPainter:Make">
+        <MSBuild Projects="ProjectPainter.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="ProjectPainter"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="ProjectPainter:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="ProjectPainter:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
