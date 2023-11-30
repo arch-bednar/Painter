@@ -36,12 +36,12 @@ type
     Copy1: TMenuItem;
     Copy2: TMenuItem;
     Filters1: TMenuItem;
-    ScrollBox1: TScrollBox;
+    ScrollBox: TScrollBox;
     Options1: TMenuItem;
     Label1: TLabel;
     Label2: TLabel;
-    Panel1: TPanel;
-    PaintBox1: TPaintBox;
+    PanelPaintBox: TPanel;
+    PaintBox: TPaintBox;
     ColorsPanel: TPanel;
     PanelDetails: TPanel;
     ToolPanel: TPanel;
@@ -95,25 +95,20 @@ type
     BtnSquareCircle: TSpeedButton;
     procedure Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
-    procedure ScrollBox1MouseMove(Sender: TObject; Shift: TShiftState; X,
+    procedure ScrollBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
-    procedure ScrollBox1MouseLeave(Sender: TObject);
-    procedure PaintBox1MouseMove(Sender: TObject; Shift: TShiftState; X,
+    procedure ScrollBoxMouseLeave(Sender: TObject);
+    procedure PaintBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
       Y: Integer);
     procedure Open1Click(Sender: TObject);
     procedure SaveAs1Click(Sender: TObject);
-    procedure PaintBox1MouseDown(Sender: TObject; Button: TMouseButton;
+    procedure PaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure PaintBox1MouseActivate(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y, HitTest: Integer;
-      var MouseActivate: TMouseActivate);
-    procedure PaintBox1DragOver(Sender, Source: TObject; X, Y: Integer;
-      State: TDragState; var Accept: Boolean);
     procedure OnClickChangeColor(Sender: TObject;
       Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure OnClickSwitchColor(Sender: TObject);
     procedure PressToolButton(Sender: TObject);
-    procedure PaintBox1MouseUp(Sender: TObject; Button: TMouseButton;
+    procedure PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
   private
     { Private declarations }
@@ -138,7 +133,7 @@ implementation
 {$R *.dfm}
 
 
-
+//Opens file and draws it on canvas -> PaintBox
 procedure TWindowPainter.Open1Click(Sender: TObject);
 var
   selectedFile: String; //selects file
@@ -162,57 +157,52 @@ begin
     //PaintBox1.Width := Image.Width;
     //PaintBox1.Height := Image.Height;
     //PaintBox1.Align := alClient;
-    PaintBox1.Canvas.Draw(0,0,Image);
+    PaintBox.Canvas.Draw(0,0,Image);
 
   finally
     dlg.Free;
   end;
 end;
 
-procedure TWindowPainter.PaintBox1DragOver(Sender, Source: TObject; X,
-  Y: Integer; State: TDragState; var Accept: Boolean);
-begin
-  //PaintBox1.Canvas.Pixels[x,y] := clBlue;
-end;
-
-procedure TWindowPainter.PaintBox1MouseActivate(Sender: TObject;
-  Button: TMouseButton; Shift: TShiftState; X, Y, HitTest: Integer;
-  var MouseActivate: TMouseActivate);
-begin
-//    PaintBox1.Canvas.Pixels[x, y] := clBlue; //<-dzia³a
-end;
-
-procedure TWindowPainter.PaintBox1MouseDown(Sender: TObject;
+//procedure to paint when mouse down on PaintBox
+procedure TWindowPainter.PaintBoxMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   //Canvas.MoveTo(x,y);
   PaintMode := pmPencil;
-  PaintBox1.Canvas.Brush.Color := clBlue;
+  if Button = TMouseButton.mbLeft then
+    PaintBox.Canvas.Pen.Color := DefaultColorPanel.Color
+  else if Button = TMouseButton.mbRight then
+    PaintBox.Canvas.Pen.Color := RightClickPanel.Color;
+
   //PaintBox1.Canvas.Pixels[x, y] := clBlue; //<-dzia³a
   //PaintBox1.Canvas.FloodFill(x,y,clBlue, TFillStyle.fsSurface);
   //PaintBox1.Canvas.Rectangle(0,0,20,20);
-  PaintBox1.Canvas.LineTo(x,y);
+  //PaintBox1.Canvas.LineTo(x,y);
 end;
 
-procedure TWindowPainter.PaintBox1MouseMove(Sender: TObject; Shift: TShiftState;
+//procedure to move mouse on PaintBox
+procedure TWindowPainter.PaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
   X, Y: Integer);
 begin
   Label1.Caption := IntToStr(x) + ' ' + IntToStr(y);
   //PaintBox1.Canvas.SetPixel(x,y,clRed);
-  PaintBox1.Canvas.Pen.Width := 2;
+  PaintBox.Canvas.Pen.Width := 2;
 //  PaintBox1.Canvas.MoveTo(x,y);
   //PaintBox1.Canvas.LineTo(x,y);
   if PaintMode = pmPencil then
     //PaintBox1.Canvas.MoveTo(x,y);
-    PaintBox1.Canvas.LineTo(x,y)
+
+    PaintBox.Canvas.LineTo(x,y)
   else
-    PaintBox1.Canvas.MoveTo(x,y);
+    PaintBox.Canvas.MoveTo(x,y);
 end;
 
-procedure TWindowPainter.PaintBox1MouseUp(Sender: TObject; Button: TMouseButton;
+//if mouse up then stop painting
+procedure TWindowPainter.PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
-  PaintMode := pmNone;
+      PaintMode := pmNone;
 end;
 
 procedure TWindowPainter.Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -220,22 +210,21 @@ procedure TWindowPainter.Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
 var
   point: TPoint;
 begin
-  //point := CursorPos;
-//  Label1.Caption := IntToStr(x) + ' ' + IntToStr(y);
-
-  if IntToStr(point.X) = IntToStr(ScrollBox1.Width-1) then
+  if IntToStr(point.X) = IntToStr(ScrollBox.Width-1) then
   begin
-    if IntToStr(point.Y) = IntToStr(ScrollBox1.Height-1) then
+    if IntToStr(point.Y) = IntToStr(ScrollBox.Height-1) then
       Screen.Cursor := crSizeNESW;
   end;
 
 end;
 
+//procedure to save canvas as bitmap and saving it into a file
 procedure TWindowPainter.SaveAs1Click(Sender: TObject);
 var
   b: boolean;
   saveDlg: TSavePictureDialog;
   Bitmap: TBitmap;
+  Jpeg: TJpegImage;
   row, col: Integer;
   Canvas: TCanvas;
 begin
@@ -245,16 +234,20 @@ begin
     b := saveDlg.Execute(Handle);
     try
       Bitmap := TBitmap.Create();
-      Bitmap.Height := PaintBox1.Height;
-      Bitmap.Width := PaintBox1.Width;
-      for row := 0 to Bitmap.Height-1 do
-        for col := 0 to Bitmap.Width-1 do
-          Bitmap.Canvas.Pixels[row, col] := PaintBox1.Canvas.Pixels[row, col];
+      Bitmap.Height := PaintBox.Height;
+      Bitmap.Width := PaintBox.Width;
+//      for row := 0 to Bitmap.Height-1 do
+//        for col := 0 to Bitmap.Width-1 do
+//          Bitmap.Canvas.Pixels[row, col] := PaintBox1.Canvas.Pixels[row, col];
 
       //Bitmap.Canvas.Assign(PaintBox1.Canvas);
 //      Canvas.Assign(PaintBox1.Canvas);
 //      Bitmap.Canvas.Assign(Canvas);
-
+      Jpeg := TJpegImage.Create();
+            Jpeg.Height := PaintBox.Height;
+      Jpeg.Width := PaintBox.Width;
+      //BitBlt(Bitmap.Canvas.Handle, 0, 0, PaintBox1.Width, PaintBox1.Height, PaintBox1.Canvas.Handle, 0, 0, SRCCOPY);
+      BitBlt(Jpeg.Canvas.Handle, 0, 0, PaintBox.Width, PaintBox.Height, PaintBox.Canvas.Handle, 0, 0, SRCCOPY);
       if FileExists(saveDlg.FileName) then
         raise Exception.Create('File Exists!')
       else
@@ -268,12 +261,13 @@ begin
   end;
 end;
 
-procedure TWindowPainter.ScrollBox1MouseLeave(Sender: TObject);
+//changes cursor to default when leaves scrollbox
+procedure TWindowPainter.ScrollBoxMouseLeave(Sender: TObject);
 begin
   Screen.Cursor := crDefault;
 end;
 
-procedure TWindowPainter.ScrollBox1MouseMove(Sender: TObject;
+procedure TWindowPainter.ScrollBoxMouseMove(Sender: TObject;
   Shift: TShiftState; X, Y: Integer);
 begin
   Label2.Caption := IntToStr(x) + ' ' + IntToStr(y);
@@ -283,6 +277,7 @@ begin
 
 end;
 
+//procedure to change one of two default colors
 procedure TWindowPainter.OnClickChangeColor(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
@@ -291,13 +286,16 @@ begin
   for I := 0 to DefaultColorsPanel.ControlCount -1 do
     if Sender = DefaultColorsPanel.Controls[i] then
     begin
+      //if left click then default color changed
       if Button = mbLeft then
         DefaultColorPanel.Color := (Sender as TPanel).Color
+      //if right click then right click color changed
       else if Button = mbRight then
         RightClickPanel.Color := (Sender as TPanel).Color;
     end;
 end;
 
+//Switching color in DefaultColorPanel and RightClickPanel
 procedure TWindowPainter.OnClickSwitchColor(Sender: TObject);
 var
   Color: TColor;
@@ -307,6 +305,7 @@ begin
     DefaultColorPanel.Color := Color;
 end;
 
+//procedure to choosing tool in TollPanel
 procedure TWindowPainter.PressToolButton(Sender: TObject);
 var
   I: Integer;

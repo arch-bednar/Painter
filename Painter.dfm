@@ -17,42 +17,42 @@ object WindowPainter: TWindowPainter
     788
     778)
   TextHeight = 15
-  object ScrollBox1: TScrollBox
+  object ScrollBox: TScrollBox
     Left = 90
     Top = 0
     Width = 692
     Height = 667
     Anchors = [akLeft, akTop, akRight, akBottom]
     BorderStyle = bsNone
-    Color = clBtnShadow
+    Color = clMedGray
     ParentColor = False
     TabOrder = 0
-    OnMouseLeave = ScrollBox1MouseLeave
-    OnMouseMove = ScrollBox1MouseMove
-    object Panel1: TPanel
+    OnMouseLeave = ScrollBoxMouseLeave
+    OnMouseMove = ScrollBoxMouseMove
+    ExplicitWidth = 688
+    ExplicitHeight = 666
+    object PanelPaintBox: TPanel
       Left = 0
       Top = 0
-      Width = 20000
-      Height = 20000
+      Width = 400
+      Height = 400
       Color = clWhite
       ParentBackground = False
       TabOrder = 0
       DesignSize = (
-        20000
-        20000)
-      object PaintBox1: TPaintBox
+        400
+        400)
+      object PaintBox: TPaintBox
         Left = 0
         Top = 0
-        Width = 200
-        Height = 200
+        Width = 400
+        Height = 400
         Anchors = [akLeft, akTop, akRight, akBottom]
         Color = clWhite
         ParentColor = False
-        OnDragOver = PaintBox1DragOver
-        OnMouseActivate = PaintBox1MouseActivate
-        OnMouseDown = PaintBox1MouseDown
-        OnMouseMove = PaintBox1MouseMove
-        OnMouseUp = PaintBox1MouseUp
+        OnMouseDown = PaintBoxMouseDown
+        OnMouseMove = PaintBoxMouseMove
+        OnMouseUp = PaintBoxMouseUp
       end
     end
   end
@@ -63,6 +63,8 @@ object WindowPainter: TWindowPainter
     Height = 84
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 1
+    ExplicitTop = 663
+    ExplicitWidth = 778
     object DefaultColorsPanel: TPanel
       Left = 16
       Top = 9
