@@ -8,6 +8,7 @@ uses
   System.SysUtils,
   System.Variants,
   System.Classes,
+  System.IOUtils,
   Vcl.Graphics,
   Vcl.Controls,
   Vcl.Forms,
@@ -18,7 +19,8 @@ uses
   Vcl.ExtDlgs,
   jpeg,
   pngimage,
-  Vcl.Buttons;
+  Vcl.Buttons,
+  StrUtils;
 
 type
   TWindowPainter = class(TForm)
@@ -120,6 +122,7 @@ type
     PointS: TPoint;
     PointSW: TPoint;
     PointW: TPoint;
+    function StrToHex(str: String): string;
   public
     { Public declarations }
     PaintMode: (pmNone, pmCustomSelection, pmSquareSelection, pmRubber, pmInk, pmSampler, pmPencil, pmSpray, pmText, pmLine, pmCursive, pmRectangle, pmPolygon, pmElipse, pmSquareCircle);
@@ -136,31 +139,78 @@ implementation
 //Opens file and draws it on canvas -> PaintBox
 procedure TWindowPainter.Open1Click(Sender: TObject);
 var
-  selectedFile: String; //selects file
-  dlg: TOpenDialog; //opens dialog to select file
-  Image: TBitmap;
+  SelectedFile: String; //selects file
+  FileExtension: String;
+  OpenDlg: TOpenDialog; //opens dialog to select file
+  Bitmap: TBitmap;
+  Png: TPngImage;
+  Jpeg: TJpegImage;
+  sF: TextFile;
+  FirstLine: String;
+  LastLine: String;
 begin
-  selectedFile := '';
-  dlg := TOpenDialog.Create(nil);
+  SelectedFile := '';
+  OpenDlg := TOpenDialog.Create(nil);
   try
-    dlg.InitialDir := 'C:\';
-    dlg.Filter := 'All files (*.*)|*.*|Bitmap (*.bmp)|*.bmp';
-    if dlg.Execute(Handle) then
-      selectedFile := dlg.FileName;
+    OpenDlg.InitialDir := 'C:\';
+    OpenDlg.Filter := 'All files (*.png;*.jpg;*.jpeg;*.bmp;*.ico)|*.png;*.jpg;*.jpeg;*.bmp;*.ico|Bitmap (*.bmp)|*.bmp|Portable Network Graphics (*.png)|*.png|JPEG Image File (*.jpg;*.jpeg)*|*.jpg;*.jpeg|Icons (*.ico)|*.ico';
+    if OpenDlg.Execute(Handle) then
+      SelectedFile := OpenDlg.FileName;
 
-    Image := TBitMap.Create();
-    Image.LoadFromFile(selectedFile);
-    //PaintBox1.
-    //Panel1.AutoSize := true;
-    //Panel1.Width := Image.Width;
-    //Panel1.Height := Image.Height;
-    //PaintBox1.Width := Image.Width;
-    //PaintBox1.Height := Image.Height;
-    //PaintBox1.Align := alClient;
-    PaintBox.Canvas.Draw(0,0,Image);
+//    FileExtension := ExtractFileExt(SelectedFile);
+
+    try
+    //TODO: zaczytywanie linii
+      try
+        FirstLine := '';
+        LastLine := '';
+        AssignFile(sF, SelectedFile);
+        Reset(sF);
+        Readln(sF, FirstLine);
+
+        while not EOF(sF) do
+          Readln(sF, LastLine);
+
+      except
+        raise Exception.Create('Error Message');
+      end;
+
+      //first line of PNG
+      if ContainsText(StrToHex(FirstLine), '89 50 4E 47 0D 0A 1A 0A') then
+        begin
+          Png := TPngImage.Create();
+          Png.LoadFromFile(SelectedFile);
+          PaintBox.Canvas.Draw(0, 0, Png);
+        end
+      //first line and last line of JPEG
+      else if ContainsText(StrToHex(FirstLine), 'FF D8') and ContainsText(StrToHex(LastLine), 'FF D9') then
+        begin
+          Jpeg := TJpegImage.Create();
+          Jpeg.LoadFromFile(SelectedFile);
+          PaintBox.Canvas.Draw(0, 0, Jpeg);
+        end
+      //bitmap
+      else
+        begin
+          Bitmap := TBitmap.Create();
+          Bitmap.LoadFromFile(SelectedFile);
+          PaintBox.Canvas.Draw(0, 0, Bitmap);
+        end;
+
+    finally
+      Png.Free;
+      Bitmap.Free;
+      Jpeg.Free;
+      CloseFile(sF);
+    end;
+
+
+//    Bitmap := TBitMap.Create();
+//    Bitmap.LoadFromFile(SelectedFile);
+//    PaintBox.Canvas.Draw(0,0,Bitmap);
 
   finally
-    dlg.Free;
+    OpenDlg.Free;
   end;
 end;
 
@@ -218,43 +268,75 @@ begin
 
 end;
 
-//procedure to save canvas as bitmap and saving it into a file
+//procedure to save canvas as bitmap, jpeg or png and saving it into a file
 procedure TWindowPainter.SaveAs1Click(Sender: TObject);
 var
   b: boolean;
   saveDlg: TSavePictureDialog;
   Bitmap: TBitmap;
   Jpeg: TJpegImage;
-  row, col: Integer;
-  Canvas: TCanvas;
+  Png: TPngImage;
+  SelectedExtension: string;
 begin
   saveDlg := TSavePictureDialog.Create(nil);
   try
-    //saveDlg.Filter := '
-    b := saveDlg.Execute(Handle);
+    //Filter for TSavePictureDialog
+    saveDlg.Filter := 'Bitmap (*.bmp)|*.bmp|JPEG Image File (*.jpg;*.jpeg)|*.jpg;*.jpeg|Portable Network Graphics (*.png)|*.png';
+     b := saveDlg.Execute(Handle);
     try
+      SelectedExtension := ExtractFileExt(saveDlg.FileName);
       Bitmap := TBitmap.Create();
       Bitmap.Height := PaintBox.Height;
       Bitmap.Width := PaintBox.Width;
-//      for row := 0 to Bitmap.Height-1 do
-//        for col := 0 to Bitmap.Width-1 do
-//          Bitmap.Canvas.Pixels[row, col] := PaintBox1.Canvas.Pixels[row, col];
+      BitBlt(Bitmap.Canvas.Handle, 0, 0, PaintBox.Width, PaintBox.Height, PaintBox.Canvas.Handle, 0, 0, SRCCOPY);
 
-      //Bitmap.Canvas.Assign(PaintBox1.Canvas);
-//      Canvas.Assign(PaintBox1.Canvas);
-//      Bitmap.Canvas.Assign(Canvas);
-      Jpeg := TJpegImage.Create();
-            Jpeg.Height := PaintBox.Height;
-      Jpeg.Width := PaintBox.Width;
-      //BitBlt(Bitmap.Canvas.Handle, 0, 0, PaintBox1.Width, PaintBox1.Height, PaintBox1.Canvas.Handle, 0, 0, SRCCOPY);
-      BitBlt(Jpeg.Canvas.Handle, 0, 0, PaintBox.Width, PaintBox.Height, PaintBox.Canvas.Handle, 0, 0, SRCCOPY);
-      if FileExists(saveDlg.FileName) then
-        raise Exception.Create('File Exists!')
+      if saveDlg.FilterIndex = 1 then
+        begin
+          if SelectedExtension = '.bmp' then
+            SelectedExtension := ''
+          else
+            SelectedExtension := '.bmp';
+
+          if FileExists(saveDlg.FileName + SelectedExtension) then
+            raise Exception.Create('File Exists!')
+          else
+            Bitmap.SaveToFile(saveDlg.FileName + SelectedExtension);
+          end
+      else if saveDlg.FilterIndex = 2 then
+        begin
+          if (SelectedExtension = '.jpg') or (SelectedExtension = '.jpeg') then
+            SelectedExtension := ''
+          else
+            SelectedExtension := '.jpg';
+
+          Jpeg := TJpegImage.Create();
+          Jpeg.Assign(Bitmap);
+
+          if FileExists(saveDlg.FileName + SelectedExtension) then
+            raise Exception.Create('File Exists!')
+          else
+            Jpeg.SaveToFile(saveDlg.FileName + SelectedExtension);
+        end
       else
-        Bitmap.SaveToFile(saveDlg.FileName);
+        begin
+          if SelectedExtension = '.png' then
+            SelectedExtension := ''
+          else
+            SelectedExtension := '.png';
+
+          Png := TPngImage.Create();
+          Png.Assign(Bitmap);
+
+          if FileExists(saveDlg.FileName + SelectedExtension) then
+            raise Exception.Create('File Exists')
+          else
+            Png.SaveToFile(saveDlg.FileName + SelectedExtension);
+        end;
 
     finally
       Bitmap.Free;
+      Jpeg.Free;
+      Png.Free;
     end;
   finally
      saveDlg.Free;
@@ -316,6 +398,16 @@ begin
     else
       (ToolPanel.Controls[i] as TSpeedButton).Down := false;
 
+end;
+
+//function to change string into hex value
+function TWindowPainter.StrToHex(str: string): string;
+var
+  I: Integer;
+begin
+  result := '';
+  for I := Low(str) to High(str)-1 do
+    result := result + ' ' + IntToHex(Ord(str[I]));
 end;
 
 end.
