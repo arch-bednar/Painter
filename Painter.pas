@@ -123,9 +123,13 @@ type
     PointSW: TPoint;
     PointW: TPoint;
     function StrToHex(str: String): string;
+//    function ImageToHex(Image: TPicture): string;
+    procedure FirstLineLastLine(const Image: TPicture; var FirstLine: string; var LastLine: string);
+    procedure ResizePaintBoxPanel(const Width: Integer; const Height: Integer);
+    procedure ChangeMode(const SpeedButton: TSpeedButton);
   public
     { Public declarations }
-    PaintMode: (pmNone, pmCustomSelection, pmSquareSelection, pmRubber, pmInk, pmSampler, pmPencil, pmSpray, pmText, pmLine, pmCursive, pmRectangle, pmPolygon, pmElipse, pmSquareCircle);
+    PaintMode: (pmNone, pmCustomSelection, pmRectangleSelection, pmRubber, pmInk, pmSampler, pmPencil, pmBrush, pmSpray, pmText, pmLine, pmCursive, pmRectangle, pmPolygon, pmEllipse, pmSquareCircle);
   end;
 
 var
@@ -140,12 +144,13 @@ implementation
 procedure TWindowPainter.Open1Click(Sender: TObject);
 var
   SelectedFile: String; //selects file
-  FileExtension: String;
+//  FileExtension: String;   <---- DELETED
   OpenDlg: TOpenDialog; //opens dialog to select file
   Bitmap: TBitmap;
   Png: TPngImage;
   Jpeg: TJpegImage;
-  sF: TextFile;
+//  sF: TextFile;    <---- DELETED
+  Image: TPicture;
   FirstLine: String;
   LastLine: String;
 begin
@@ -157,57 +162,59 @@ begin
     if OpenDlg.Execute(Handle) then
       SelectedFile := OpenDlg.FileName;
 
-//    FileExtension := ExtractFileExt(SelectedFile);
-
     try
-    //TODO: zaczytywanie linii
-      try
-        FirstLine := '';
-        LastLine := '';
+    //DONE: loading first and last bytes of picture
+      FirstLine := '';
+      LastLine := '';
+      Image := TPicture.Create();
+      Image.LoadFromFile(SelectedFile);
+      Png := TPngImage.Create();
+      Jpeg := TJpegImage.Create();
+      Bitmap := TBitmap.Create();
+      {
+        Loading picture as TextFile does not work
+      }
+      {
         AssignFile(sF, SelectedFile);
         Reset(sF);
         Readln(sF, FirstLine);
 
         while not EOF(sF) do
           Readln(sF, LastLine);
+      }
 
-      except
-        raise Exception.Create('Error Message');
-      end;
+      FirstLineLastLine(Image, FirstLine, LastLine);
 
-      //first line of PNG
-      if ContainsText(StrToHex(FirstLine), '89 50 4E 47 0D 0A 1A 0A') then
+      if ContainsText(FirstLine, '89504E470D0A1A0A') then //first line of PNG  '89 50 4E 47 0D 0A 1A 0A'
         begin
-          Png := TPngImage.Create();
           Png.LoadFromFile(SelectedFile);
+          ResizePaintBoxPanel(Png.Width, Png.Height);
           PaintBox.Canvas.Draw(0, 0, Png);
         end
-      //first line and last line of JPEG
-      else if ContainsText(StrToHex(FirstLine), 'FF D8') and ContainsText(StrToHex(LastLine), 'FF D9') then
+      else if ContainsText(FirstLine.Substring(0, 4)	, 'FFD8') and  //first line 'FF D8' and last line 'FF D9' of JPEG
+              ContainsText(LastLine, 'FFD9') then
         begin
-          Jpeg := TJpegImage.Create();
           Jpeg.LoadFromFile(SelectedFile);
+          ResizePaintBoxPanel(Jpeg.Width, Jpeg.Height);
           PaintBox.Canvas.Draw(0, 0, Jpeg);
         end
-      //bitmap
-      else
+      else  //if not jpg or png then tries load as bitmap
         begin
-          Bitmap := TBitmap.Create();
-          Bitmap.LoadFromFile(SelectedFile);
-          PaintBox.Canvas.Draw(0, 0, Bitmap);
+          try
+            Bitmap.LoadFromFile(SelectedFile);
+            ResizePaintBoxPanel(Bitmap.Width, Bitmap.Height);
+            PaintBox.Canvas.Draw(0, 0, Bitmap);
+          except
+            raise Exception.Create('File is not valid!');
+          end;
         end;
 
     finally
-      Png.Free;
       Bitmap.Free;
+      Png.Free;
       Jpeg.Free;
-      CloseFile(sF);
+      Image.Free;
     end;
-
-
-//    Bitmap := TBitMap.Create();
-//    Bitmap.LoadFromFile(SelectedFile);
-//    PaintBox.Canvas.Draw(0,0,Bitmap);
 
   finally
     OpenDlg.Free;
@@ -237,7 +244,7 @@ procedure TWindowPainter.PaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
 begin
   Label1.Caption := IntToStr(x) + ' ' + IntToStr(y);
   //PaintBox1.Canvas.SetPixel(x,y,clRed);
-  PaintBox.Canvas.Pen.Width := 2;
+  PaintBox.Canvas.Pen.Width := 1;
 //  PaintBox1.Canvas.MoveTo(x,y);
   //PaintBox1.Canvas.LineTo(x,y);
   if PaintMode = pmPencil then
@@ -282,7 +289,7 @@ begin
   try
     //Filter for TSavePictureDialog
     saveDlg.Filter := 'Bitmap (*.bmp)|*.bmp|JPEG Image File (*.jpg;*.jpeg)|*.jpg;*.jpeg|Portable Network Graphics (*.png)|*.png';
-     b := saveDlg.Execute(Handle);
+    b := saveDlg.Execute(Handle);
     try
       SelectedExtension := ExtractFileExt(saveDlg.FileName);
       Bitmap := TBitmap.Create();
@@ -391,13 +398,18 @@ end;
 procedure TWindowPainter.PressToolButton(Sender: TObject);
 var
   I: Integer;
+  SpeedButton: TSpeedButton;
 begin
   for I := 0 to ToolPanel.ControlCount - 1 do
-    if Sender = (ToolPanel.Controls[i] as TSpeedButton) then
-      (ToolPanel.Controls[i] as TSpeedButton).Down := true
+    SpeedButton := (ToolPanel.Controls[i] as TSpeedButton);
+    if Sender = SpeedButton then
+    begin
+      SpeedButton.Down := true;
+    end
     else
-      (ToolPanel.Controls[i] as TSpeedButton).Down := false;
-
+    begin
+      SpeedButton.Down := false;
+    end;
 end;
 
 //function to change string into hex value
@@ -408,6 +420,93 @@ begin
   result := '';
   for I := Low(str) to High(str)-1 do
     result := result + ' ' + IntToHex(Ord(str[I]));
+
+end;
+
+procedure TWindowPainter.FirstLineLastLine(const Image: TPicture; var FirstLine: string; var LastLine: string);
+{
+  Loads first and last bytes of picture files
+  By creating TMemoryStream it load first and last bytes of picture into
+  BufferFirstBytes and BufferLastBytes
+}
+var
+  Stream: TMemoryStream;
+  BufferFirstBytes: TBytes;
+  BufferLastBytes: TBytes;
+  LastBytesPosition: LongInt;
+  I: Integer;
+begin
+  try
+    Stream := TMemoryStream.Create();
+    Image.Graphic.SaveToStream(Stream);
+
+    SetLength(BufferFirstBytes, 8); //8 bytes cos max bytes to compare is 8 ( first eight bytes of png image)
+    Stream.Position := 0; //setting position in the stream
+    Stream.ReadBuffer(BufferFirstBytes, 8);
+
+    SetLength(BufferLastBytes, 2); //2 bytes to compare to jpeg
+    LastBytesPosition := Stream.Size-2; //calculate position to take 2 last bytes
+    Stream.Seek(LastBytesPosition, soBeginning);  //we seek them in the stream without loading all of them into a variable or loop
+    Stream.ReadBuffer(BufferLastBytes, 2); //we loads last 2 bytes into array
+
+    //translation first and last bytes into HEX
+    for I := Low(BufferFirstBytes) to High(BufferFirstBytes) do
+      FirstLine := FirstLine + IntToHex(BufferFirstBytes[I]);
+
+    for I := Low(BufferLastBytes) to High(BufferLastBytes) do
+      LastLine := LastLine + IntToHex(BufferLastBytes[I]);
+
+  finally
+    BufferFirstBytes:=nil;
+    BufferLastBytes:=nil;
+    Stream.Free;
+  end;
+end;
+
+procedure TWindowPainter.ResizePaintBoxPanel(const Width: Integer; const Height: Integer);
+begin
+  PanelPaintBox.Width := Width;
+  PanelPaintBox.Height := Height;
+  PaintBox.Width := Width;
+  PaintBox.Height := Height;
+end;
+
+procedure TWindowPainter.ChangeMode(const SpeedButton: TSpeedButton);
+begin
+  if SpeedButton = BtnCustomSelect then
+    PaintMode := pmCustomSelection
+  else if SpeedButton = BtnRectangleSelect then
+    PaintMode := pmRectangleSelection
+  else if SpeedButton = BtnRubber then
+    PaintMode := pmRubber
+  else if SpeedButton = BtnInk then
+    PaintMode := pmInk
+  else if SpeedButton = BtnSampler then
+    PaintMode := pmSampler
+//  else if SpeedButton = BtnZoom then
+//    PaintMode := pmZoom
+  else if SpeedButton = BtnPencil then
+    PaintMode := pmPencil
+  else if SpeedButton = BtnBrush then
+    PaintMode := pmBrush
+  else if SpeedButton = BtnSpray then
+    PaintMode := pmSpray
+  else if SpeedButton = BtnText then
+    PaintMode := pmText
+  else if SpeedButton = BtnLine then
+    PaintMode := pmLine
+  else if SpeedButton = BtnCursive then
+    PaintMode := pmCursive
+  else if SpeedButton = BtnRectangle then
+    PaintMode := pmRectangle
+  else if SpeedButton = BtnCustomFig then
+    PaintMode := pmPolygon
+  else if SpeedButton = BtnEllipse then
+    PaintMode := pmEllipse
+  else if SpeedButton = BtnSquareCircle then
+    PaintMode := pmSquareCircle
+
+
 end;
 
 end.
