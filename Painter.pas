@@ -122,11 +122,15 @@ type
     PointS: TPoint;
     PointSW: TPoint;
     PointW: TPoint;
+    LeftBtnDown: Boolean;
+    RightBtnDown: Boolean;
     function StrToHex(str: String): string;
 //    function ImageToHex(Image: TPicture): string;
     procedure FirstLineLastLine(const Image: TPicture; var FirstLine: string; var LastLine: string);
     procedure ResizePaintBoxPanel(const Width: Integer; const Height: Integer);
     procedure ChangeMode(const SpeedButton: TSpeedButton);
+    procedure PaintPencil(const X, Y: Integer);
+    //procedure PaintRectangle;
   public
     { Public declarations }
     PaintMode: (pmNone, pmCustomSelection, pmRectangleSelection, pmRubber, pmInk, pmSampler, pmPencil, pmBrush, pmSpray, pmText, pmLine, pmCursive, pmRectangle, pmPolygon, pmEllipse, pmSquareCircle);
@@ -225,12 +229,39 @@ end;
 procedure TWindowPainter.PaintBoxMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
-  //Canvas.MoveTo(x,y);
-  PaintMode := pmPencil;
+
+  PaintBox.Canvas.MoveTo(x,y); // <===== It must be, without it Canvas' Brush won't change it's position
+
   if Button = TMouseButton.mbLeft then
-    PaintBox.Canvas.Pen.Color := DefaultColorPanel.Color
+    begin
+      LeftBtnDown := true;
+      RightBtnDown := false;
+      PaintBox.Canvas.Pen.Color := DefaultColorPanel.Color;
+    end
   else if Button = TMouseButton.mbRight then
-    PaintBox.Canvas.Pen.Color := RightClickPanel.Color;
+    begin
+      LeftBtnDown := false;
+      RightBtnDown := true;
+      PaintBox.Canvas.Pen.Color := RightClickPanel.Color;
+    end;
+
+//  if PaintMode = pmPencil then
+//    if Button = TMouseButton.mbLeft then
+//      begin
+//        LeftBtnDown := true;
+//        RightBtnDown := false;
+//        PaintBox.Canvas.Pen.Color := DefaultColorPanel.Color;
+//      end
+//    else if Button = TMouseButton.mbRight then
+//      begin
+//        LeftBtnDown := false;
+//        RightBtnDown := true;
+//        PaintBox.Canvas.Pen.Color := RightClickPanel.Color;
+//      end
+//  else if PaintMode = pmRectangle then
+//    if True then
+
+
 
   //PaintBox1.Canvas.Pixels[x, y] := clBlue; //<-dzia³a
   //PaintBox1.Canvas.FloodFill(x,y,clBlue, TFillStyle.fsSurface);
@@ -245,21 +276,28 @@ begin
   Label1.Caption := IntToStr(x) + ' ' + IntToStr(y);
   //PaintBox1.Canvas.SetPixel(x,y,clRed);
   PaintBox.Canvas.Pen.Width := 1;
-//  PaintBox1.Canvas.MoveTo(x,y);
+  //PaintBox.Canvas.MoveTo(x,y);
   //PaintBox1.Canvas.LineTo(x,y);
-  if PaintMode = pmPencil then
-    //PaintBox1.Canvas.MoveTo(x,y);
-
-    PaintBox.Canvas.LineTo(x,y)
-  else
-    PaintBox.Canvas.MoveTo(x,y);
+  if ((LeftBtnDown = true) or (RightBtnDown = true)) then
+  begin
+    if PaintMode = pmPencil then
+      //PaintBox1.Canvas.MoveTo(x,y);
+      //PaintBox.Canvas.LineTo(x,y)
+      PaintPencil(X, Y)
+    else
+      PaintBox.Canvas.MoveTo(x,y);
+  end;
 end;
 
 //if mouse up then stop painting
 procedure TWindowPainter.PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
-      PaintMode := pmNone;
+  //PaintMode := pmNone;
+  if Button = mbLeft then
+    LeftBtnDown := false
+  else if Button = mbRight then
+    RightBtnDown := false;
 end;
 
 procedure TWindowPainter.Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -401,15 +439,18 @@ var
   SpeedButton: TSpeedButton;
 begin
   for I := 0 to ToolPanel.ControlCount - 1 do
+  begin
     SpeedButton := (ToolPanel.Controls[i] as TSpeedButton);
     if Sender = SpeedButton then
     begin
       SpeedButton.Down := true;
+      ChangeMode(SpeedButton);
     end
     else
     begin
       SpeedButton.Down := false;
     end;
+  end;
 end;
 
 //function to change string into hex value
@@ -420,7 +461,6 @@ begin
   result := '';
   for I := Low(str) to High(str)-1 do
     result := result + ' ' + IntToHex(Ord(str[I]));
-
 end;
 
 procedure TWindowPainter.FirstLineLastLine(const Image: TPicture; var FirstLine: string; var LastLine: string);
@@ -472,6 +512,9 @@ begin
 end;
 
 procedure TWindowPainter.ChangeMode(const SpeedButton: TSpeedButton);
+{
+  Procedure changes current mode
+}
 begin
   if SpeedButton = BtnCustomSelect then
     PaintMode := pmCustomSelection
@@ -507,6 +550,11 @@ begin
     PaintMode := pmSquareCircle
 
 
+end;
+
+procedure TWindowPainter.PaintPencil(const X, Y: Integer);
+begin
+  PaintBox.Canvas.LineTo(X, Y);
 end;
 
 end.

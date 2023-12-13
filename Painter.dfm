@@ -566,7 +566,7 @@ object WindowPainter: TWindowPainter
     end
     object BtnRectangleSelect: TSpeedButton
       Left = 46
-      Top = 16
+      Top = 10
       Width = 38
       Height = 38
       GroupIndex = 1
