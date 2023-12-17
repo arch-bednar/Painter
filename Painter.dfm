@@ -20,7 +20,7 @@ object WindowPainter: TWindowPainter
   object ScrollBox: TScrollBox
     Left = 90
     Top = 0
-    Width = 692
+    Width = 676
     Height = 667
     Anchors = [akLeft, akTop, akRight, akBottom]
     BorderStyle = bsNone
@@ -29,7 +29,7 @@ object WindowPainter: TWindowPainter
     TabOrder = 0
     OnMouseLeave = ScrollBoxMouseLeave
     OnMouseMove = ScrollBoxMouseMove
-    ExplicitWidth = 688
+    ExplicitWidth = 672
     ExplicitHeight = 666
     object PanelPaintBox: TPanel
       Left = 0
@@ -48,8 +48,6 @@ object WindowPainter: TWindowPainter
         Width = 400
         Height = 400
         Anchors = [akLeft, akTop, akRight, akBottom]
-        Color = clWhite
-        ParentColor = False
         OnMouseDown = PaintBoxMouseDown
         OnMouseMove = PaintBoxMouseMove
         OnMouseUp = PaintBoxMouseUp
@@ -59,12 +57,12 @@ object WindowPainter: TWindowPainter
   object ColorsPanel: TPanel
     Left = -2
     Top = 664
-    Width = 782
+    Width = 766
     Height = 84
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 1
     ExplicitTop = 663
-    ExplicitWidth = 778
+    ExplicitWidth = 762
     object DefaultColorsPanel: TPanel
       Left = 16
       Top = 9
@@ -383,12 +381,12 @@ object WindowPainter: TWindowPainter
   object PanelDetails: TPanel
     Left = 0
     Top = 748
-    Width = 782
+    Width = 766
     Height = 26
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 2
     ExplicitTop = 747
-    ExplicitWidth = 778
+    ExplicitWidth = 762
     object Label1: TLabel
       Left = 112
       Top = 6
