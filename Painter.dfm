@@ -13,6 +13,7 @@ object WindowPainter: TWindowPainter
   Font.Name = 'Segoe UI'
   Font.Style = []
   Menu = MainMenu
+  OnCreate = FormCreate
   DesignSize = (
     788
     778)
@@ -414,7 +415,7 @@ object WindowPainter: TWindowPainter
     ExplicitHeight = 662
     object BtnCustomSelect: TSpeedButton
       Left = 8
-      Top = 16
+      Top = 10
       Width = 38
       Height = 38
       GroupIndex = 1
@@ -2716,6 +2717,14 @@ object WindowPainter: TWindowPainter
         F5F7F6F5F7F6F5F7F6F5F7F6F5F7F6F5F7F6F5F7F6F5F7F6F5F7F6F50000}
       OnClick = PressToolButton
     end
+    object Panel1: TPanel
+      Left = 16
+      Top = 328
+      Width = 57
+      Height = 89
+      BorderStyle = bsSingle
+      TabOrder = 0
+    end
   end
   object MainMenu: TMainMenu
     Left = 40
@@ -2724,6 +2733,7 @@ object WindowPainter: TWindowPainter
       Caption = 'File'
       object New1: TMenuItem
         Caption = 'New'
+        OnClick = New1Click
       end
       object Open1: TMenuItem
         Caption = 'Open'

@@ -9,6 +9,7 @@ interface
     System.Variants,
     System.Classes,
     System.IOUtils,
+    System.Math,
     Vcl.Graphics,
     Vcl.Controls,
     Vcl.Forms,
@@ -17,9 +18,9 @@ interface
     Vcl.ExtCtrls,
     Vcl.StdCtrls,
     Vcl.ExtDlgs,
+    Vcl.Buttons,
     jpeg,
     pngimage,
-    Vcl.Buttons,
     StrUtils;
 
   type
@@ -95,6 +96,7 @@ interface
       BtnCustomFig: TSpeedButton;
       BtnEllipse: TSpeedButton;
       BtnSquareCircle: TSpeedButton;
+    Panel1: TPanel;
       procedure Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
         Y: Integer);
       procedure ScrollBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -112,6 +114,8 @@ interface
       procedure PressToolButton(Sender: TObject);
       procedure PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
         Shift: TShiftState; X, Y: Integer);
+    procedure New1Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
     private
       { Private declarations }
       PointNW: TPoint;
@@ -126,7 +130,11 @@ interface
       RightBtnDown: Boolean;
       DownPointX, DownPointY: Integer;
       UpPointX, UpPointY: Integer;
-      PolPoints: array of TPoint; // <---- Array of Polygon points
+      FirstPointX, FirstPointY: Integer;
+      PolPoints: Integer; // <---- count of Polygon points
+      Radius: Integer; // <-- for RectCircle
+      SprayX, SprayY: Integer; // <- for spray
+      SprayRadius: Integer; // <- radius for spray
       function StrToHex(str: String): string;
   //    function ImageToHex(Image: TPicture): string;
       procedure FirstLineLastLine(const Image: TPicture; var FirstLine: string; var LastLine: string);
@@ -144,7 +152,7 @@ interface
       property DX: Integer read DownPointX write DownPointX;
       property DY: Integer read DownPointY write DownPointY;
       property UX: Integer read UpPointX write UpPointX;
-
+      property UY: Integer read UpPointY write UpPointY;
     end;
 
   var
@@ -238,6 +246,10 @@ implementation
   //procedure to paint when mouse down on PaintBox
   procedure TWindowPainter.PaintBoxMouseDown(Sender: TObject;
     Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+  var
+    BrushColor: TColor;
+    RangeLowX, RangeHighX, RangeLowY, RangeHighY: Integer;
+    i: Integer;
   begin
 
     PaintBox.Canvas.MoveTo(x,y); // <===== It must be, without it Canvas' Brush won't change it's position
@@ -251,12 +263,15 @@ implementation
 
     if (Button = TMouseButton.mbLeft) or (Button = TMouseButton.mbRight) then
     begin
+      PaintBox.Canvas.CopyMode := cmSrcCopy;
       if Button = TMouseButton.mbLeft then
         begin
+
           LeftBtnDown := true;
           RightBtnDown := false;
           PaintBox.Canvas.Pen.Color := DefaultColorPanel.Color;
           PaintBox.Canvas.Pen.Mode := pmNotXor;
+          BrushColor := DefaultColorPanel.Color;
         end
       else if Button = TMouseButton.mbRight then
         begin
@@ -264,17 +279,31 @@ implementation
           RightBtnDown := true;
           PaintBox.Canvas.Pen.Color := RightClickPanel.Color;
           PaintBox.Canvas.Pen.Mode := pmNotXor;
+          BrushColor := RightClickPanel.Color
         end;
 
       //For polygon mode
       if PaintMode = pmPolygon then
         begin
+          if FirstPointX = -1 then
+          begin
+            FirstPointX := XT;
+            FirstPointY := YT;
+            UX := XT;
+            UY := YT;
+            PolPoints := 1;
+          end
+          else
+          begin //bez tego dorysowuje dodatkow¹ liniê!!!!!!!
+            PaintBox.Canvas.MoveTo(UX, UY);
+            PaintBox.Canvas.LineTo(XT, YT);
+          end;
           //we set length of PolPoints araay and add first point to PolPoints array
-          if Length(PolPoints) = 0 then
-            begin
-              SetLength(PolPoints, 1);
-              PolPoints[0] := TPoint.Create(X, Y);
-            end
+//          if Length(PolPoints) = 0 then
+//            begin
+//              SetLength(PolPoints, 1);
+//              PolPoints[0] := TPoint.Create(X, Y);
+//            end
         end
       else if PaintMode = pmSampler then
         begin
@@ -283,6 +312,50 @@ implementation
             DefaultColorPanel.Color := PaintBox.Canvas.Pixels[X, Y]
           else if Button = TMouseButton.mbRight then
             RightClickPanel.Color := PaintBox.Canvas.Pixels[X, Y];
+        end
+      else if PaintMode = pmInk then
+        begin
+  //        PaintBox.Canvas.CopyMode := cmSrcPaint;
+          PaintBox.Canvas.Brush.Color := BrushColor;
+          PaintBox.Canvas.Brush.Style := bsSolid;
+          PaintBox.Canvas.FloodFill(X, Y, PaintBox.Canvas.Pixels[x,y], fsSurface);
+          //PaintBox.Canvas.CopyMode := cmSrcCopy;
+          PaintBox.Canvas.Brush.Style := bsClear;
+        end
+      else if PaintMode = pmSpray then
+        begin
+          if (X < PaintBox.Width) and (Y < PaintBox.Height) then
+            begin
+              if X - SprayRadius < 0 then
+                RangeLowX := 0
+              else
+                RangeLowX := X - SprayRadius;
+
+              if X + SprayRadius > PaintBox.Width then
+                RangeHighX := PaintBox.Width
+              else
+                RangeHighX := X + SprayRadius;
+
+              if Y - SprayRadius < 0 then
+                RangeLowY := 0
+              else
+                RangeLowY := Y - SprayRadius;
+
+              if Y + SprayRadius > PaintBox.Height then
+                RangeHighY := PaintBox.Height
+              else
+                RangeHighY := Y + SprayRadius;
+
+              for i := 0 to 15 do
+              begin
+                repeat
+                  SprayX := RandomRange(RangeLowX, RangeHighX);
+                  SprayY := RandomRange(RangeLowY, RangeHighY);
+                until Power((SprayX - XT), 2) + Power((SprayY - YT), 2) < Power(SprayRadius, 2);
+
+                PaintBox.Canvas.Pixels[SprayX, SprayY] := BrushColor;
+              end;
+            end;
         end;
 
 
@@ -315,8 +388,12 @@ implementation
   //procedure to move mouse on PaintBox
   procedure TWindowPainter.PaintBoxMouseMove(Sender: TObject; Shift: TShiftState;
     X, Y: Integer);
+  var
+    Color: TColor;
+    RangeLowX, RangeHighX, RangeLowY, RangeHighY: Integer;
+    i: Integer;
   begin
-    Label1.Caption := IntToStr(x) + ' ' + IntToStr(y);
+    //Label1.Caption := IntToStr(x) + ' ' + IntToStr(y);
     //PaintBox1.Canvas.SetPixel(x,y,clRed);
     PaintBox.Canvas.Pen.Width := 1;
     //PaintBox.Canvas.MoveTo(x,y);
@@ -325,6 +402,12 @@ implementation
       begin
       if (LeftBtnDown = true) or (RightBtnDown = true) then
         begin
+          if LeftBtnDown = true then
+            Color := DefaultColorPanel.Color
+          else
+            Color := RightClickPanel.Color;
+
+
           //raise Exception.Create('Click right: ' + BoolToStr(LeftBtnDown));
           if PaintMode = pmPencil then
             //PaintBox1.Canvas.MoveTo(x,y);
@@ -342,10 +425,51 @@ implementation
           else if PaintMode = pmPolygon then
             begin
               //first we move to lastest point
-              MoveTo(PolPoints[High(PolPoints)].X,
-                     PolPoints[High(PolPoints)].Y);
-              //we draw the line to XT, YT points
-              LineTo(XT, YT);
+//              MoveTo(PolPoints[Length(PolPoints)-1].X,
+//                     PolPoints[Length(PolPoints)-1].Y);
+//              //we draw the line to XT, YT points
+//              LineTo(XT, YT);
+                MoveTo(UX, UY);
+                LineTo(XT, YT);
+            end
+          else if PaintMode = pmSquareCircle then
+            begin
+              RoundRect(DX, DY, XT, YT, Radius, Radius);
+            end
+          else if PaintMode = pmSpray then
+            begin
+              if (X < PaintBox.Width) and (Y < PaintBox.Height) and (X > 0) and (Y > 0) then
+                begin
+                if X - SprayRadius < 0 then
+                  RangeLowX := 0
+                else
+                  RangeLowX := X - SprayRadius;
+
+                if X + SprayRadius > PaintBox.Width then
+                  RangeHighX := PaintBox.Width
+                else
+                  RangeHighX := X + SprayRadius;
+
+                if Y - SprayRadius < 0 then
+                  RangeLowY := 0
+                else
+                  RangeLowY := Y - SprayRadius;
+
+                if Y + SprayRadius > PaintBox.Height then
+                  RangeHighY := PaintBox.Height
+                else
+                  RangeHighY := Y + SprayRadius;
+
+                for i := 0 to 15 do
+                  begin
+                    repeat
+                      SprayX := RandomRange(RangeLowX, RangeHighX);
+                      SprayY := RandomRange(RangeLowY, RangeHighY);
+                    until Power((SprayX - X), 2) + Power((SprayY - Y), 2) < Power(SprayRadius, 2);
+
+                    PaintBox.Canvas.Pixels[SprayX, SprayY] := Color;
+                  end;
+                end;
             end
           else
             MoveTo(x,y);
@@ -367,10 +491,14 @@ implementation
          else if PaintMode = pmPolygon then
              //DrawLine(X, Y);
            begin
-             MoveTo(PolPoints[High(PolPoints)].X,
-                    PolPoints[High(PolPoints)].Y);
-             LineTo(X, Y);
-           end;
+//             MoveTo(PolPoints[Length(PolPoints)-1].X,
+//                    PolPoints[Length(PolPoints)-1].Y);
+//             LineTo(X, Y);
+               MoveTo(UX, UY);
+               LineTo(X, Y);
+           end
+         else if PaintMode = pmSquareCircle then
+           RoundRect(DX, DY, X, Y, Radius, Radius);
 
       end;
 
@@ -399,22 +527,26 @@ implementation
         end
       else if PaintMode = pmPolygon then
         begin
-          SetLength(PolPoints, High(PolPoints)+1);
-          PolPoints[High(PolPoints)] := TPoint.Create(XT, YT);
-//          if High(PolPoints) > 2 then
-//            if PolPoints[Low(PolPoints)].Distance(PolPoints[High(PolPoints)]) < 3 then
+//          SetLength(PolPoints, Length(PolPoints)+1);
+//          PolPoints[Length(PolPoints)-1] := TPoint.Create(XT, YT);
+//
+//          Label1.Caption :=  IntToStr(Length(PolPoints)) + '; distance: ' + Double.ToString(PolPoints[Low(PolPoints)].Distance(PolPoints[High(PolPoints)]));
+          UX := XT;
+          UY := YT;
+          PolPoints := PolPoints + 1;
+          MoveTo(UX, UY);
+          LineTo(XT, YT);
+
+//            if (TPoint.Create(FirstPointX, FirstPointY)).Distance(TPoint.Create(UX, UY)) < 50 then
 //            begin
 ////              //Draw line between these points
-//              MoveTo(PolPoints[High(PolPoints)].X,
-//                     PolPoints[High(PolPoints)].Y);
-////              MoveTo(DX, DY);
-//              LineTo(PolPoints[Low(PolPoints)].X,
-//                     PolPoints[Low(PolPoints)].Y);
+////              MoveTo(PolPoints[High(PolPoints)].X,
+////                     PolPoints[High(PolPoints)].Y);
+//              MoveTo(UX, UY);
+//              LineTo(XT, YT);
+////              LineTo(PolPoints[Low(PolPoints)].X,
+////                     PolPoints[Low(PolPoints)].Y);
 //            end;
-
-          MoveTo(PolPoints[High(PolPoints)].X,
-                 PolPoints[High(PolPoints)].Y);
-          LineTo(XT, YT);
         end;
 
 //    NIE POTRZEBNE, DLACZEGO?????
@@ -434,11 +566,32 @@ implementation
         end
       else if PaintMode = pmPolygon then
          begin
-          MoveTo(PolPoints[High(PolPoints)].X,
-                     PolPoints[High(PolPoints)].Y);
-//          LineTo(PolPoints[Low(PolPoints)].X,
-//                     PolPoints[Low(PolPoints)].Y);
-          LineTo(X, Y);
+//          MoveTo(PolPoints[High(PolPoints)].X,
+//                     PolPoints[High(PolPoints)].Y);
+////          LineTo(PolPoints[Low(PolPoints)].X,
+////                     PolPoints[Low(PolPoints)].Y);
+//          LineTo(X, Y);
+            MoveTo(UX, UY);
+            LineTo(X, Y);
+
+            //connects last line with the first one
+            if PolPoints > 2 then
+              begin
+                Label1.Caption := 'Distance: ' +  Double.ToString((TPoint.Create(FirstPointX, FirstPointY)).Distance(TPoint.Create(UX, UY)));
+                if (TPoint.Create(FirstPointX, FirstPointY)).Distance(TPoint.Create(UX, UY)) < 4 then
+                  begin
+      //              //Draw line between these points
+      //              MoveTo(PolPoints[High(PolPoints)].X,
+      //                     PolPoints[High(PolPoints)].Y);
+                    MoveTo(X, Y);
+                    LineTo(FirstPointX, FirstPointY);
+                    PolPoints := 0;
+                    FirstPointX := -1;
+                    FirstPointY := -1;
+      //              LineTo(PolPoints[Low(PolPoints)].X,
+      //                     PolPoints[Low(PolPoints)].Y);
+                  end;
+              end;
          end;
 
     end;
@@ -542,10 +695,6 @@ implementation
     Shift: TShiftState; X, Y: Integer);
   begin
     Label2.Caption := IntToStr(x) + ' ' + IntToStr(y);
-  //    if X - ScrollBox1.Width <= 10 then
-  //      if Y - ScrollBox1.Height <= 10 then
-  //        Screen.Cursor := crSizeNESW;
-
   end;
 
   //procedure to change one of two default colors
@@ -584,16 +733,21 @@ implementation
   begin
     for I := 0 to ToolPanel.ControlCount - 1 do
     begin
-      SpeedButton := (ToolPanel.Controls[i] as TSpeedButton);
-      if Sender = SpeedButton then
-      begin
-        SpeedButton.Down := true;
-        ChangeMode(SpeedButton);
-      end
-      else
-      begin
-        SpeedButton.Down := false;
+      try
+        SpeedButton := (ToolPanel.Controls[i] as TSpeedButton);
+      except
+        continue;
       end;
+
+      if Sender = SpeedButton then
+        begin
+          SpeedButton.Down := true;
+          ChangeMode(SpeedButton);
+        end
+      else
+        begin
+          SpeedButton.Down := false;
+        end;
     end;
   end;
 
@@ -647,7 +801,26 @@ implementation
     end;
   end;
 
-  procedure TWindowPainter.ResizePaintBoxPanel(const Width: Integer; const Height: Integer);
+procedure TWindowPainter.FormCreate(Sender: TObject);
+begin
+  Screen.Cursors[1] := LoadCUrsorFromFile('./cursors/pencil.cur');
+end;
+
+procedure TWindowPainter.New1Click(Sender: TObject);
+{
+  Procedure clears PainBox' Canvas
+}
+begin
+  ResizePaintBoxPanel(400, 400);
+  PaintBox.Canvas.CopyMode := cmSrcPaint;
+  PaintBox.Canvas.Pen.Color := clWhite;
+  PaintBox.Canvas.Brush.Color := clWhite;
+  //PaintBox.Canvas.Brush.Style := bsSolid;
+  PaintBox.Canvas.Pen.Mode := pmCopy;
+  PaintBox.Canvas.Rectangle(0,0,PaintBox.Height, PaintBox.Width);
+end;
+
+procedure TWindowPainter.ResizePaintBoxPanel(const Width: Integer; const Height: Integer);
   begin
     PanelPaintBox.Width := Width;
     PanelPaintBox.Height := Height;
@@ -673,28 +846,50 @@ implementation
   //  else if SpeedButton = BtnZoom then
   //    PaintMode := pmZoom
     else if SpeedButton = BtnPencil then
-      PaintMode := pmPencil
+      begin
+        Cursor := 1;
+        PaintMode := pmPencil
+      end
     else if SpeedButton = BtnBrush then
       PaintMode := pmBrush
     else if SpeedButton = BtnSpray then
-      PaintMode := pmSpray
+      begin
+        PaintMode := pmSpray;
+        SprayRadius := 15;
+      end
     else if SpeedButton = BtnText then
       PaintMode := pmText
     else if SpeedButton = BtnLine then
-      PaintMode := pmLine
+      begin
+        Screen.Cursor := crCross;
+        PaintMode := pmLine
+      end
     else if SpeedButton = BtnCursive then
       PaintMode := pmCursive
     else if SpeedButton = BtnRectangle then
-      PaintMode := pmRectangle
+      begin
+        Screen.Cursor := crCross;
+        PaintMode := pmRectangle
+      end
     else if SpeedButton = BtnCustomFig then
       begin
+        Screen.Cursor := crCross;
         PaintMode := pmPolygon;
-        SetLength(PolPoints, 0);
+        //SetLength(PolPoints, 0);
+        FirstPointX := -1;
+        FirstPointY := -1;
       end
     else if SpeedButton = BtnEllipse then
-      PaintMode := pmEllipse
+      begin
+        Screen.Cursor := crCross;
+        PaintMode := pmEllipse
+      end
     else if SpeedButton = BtnSquareCircle then
-      PaintMode := pmSquareCircle
+      begin
+        Radius := 20;
+        Screen.Cursor := crCross;
+        PaintMode := pmSquareCircle
+      end;
 
 
   end;
@@ -703,16 +898,6 @@ implementation
   begin
     PaintBox.Canvas.LineTo(X, Y);
   end;
-
-//  procedure TWindowPainter.setPointX(const X: Integer);
-//  begin
-//    PX := X;
-//  end;
-//
-//  procedure TWindowPainter.setPointY(const Y: Integer);
-//  begin
-//    PY := Y;
-//  end;
 
   procedure TWindowPainter.DrawLine(const X: Integer; const Y: Integer);
   begin
