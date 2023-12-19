@@ -2,7 +2,7 @@ object WindowPainter: TWindowPainter
   Left = 0
   Top = 0
   Caption = 'WindowPainterForm'
-  ClientHeight = 903
+  ClientHeight = 634
   ClientWidth = 788
   Color = clBtnFace
   Constraints.MinHeight = 600
@@ -17,13 +17,13 @@ object WindowPainter: TWindowPainter
   OnShow = FormShow
   DesignSize = (
     788
-    903)
+    634)
   TextHeight = 15
   object ScrollBox: TScrollBox
     Left = 92
     Top = 0
     Width = 672
-    Height = 792
+    Height = 523
     Anchors = [akLeft, akTop, akRight, akBottom]
     BorderStyle = bsNone
     Color = clMedGray
@@ -58,7 +58,7 @@ object WindowPainter: TWindowPainter
   end
   object ColorsPanel: TPanel
     Left = -2
-    Top = 789
+    Top = 520
     Width = 762
     Height = 84
     Anchors = [akLeft, akRight, akBottom]
@@ -382,7 +382,7 @@ object WindowPainter: TWindowPainter
   end
   object PanelDetails: TPanel
     Left = 0
-    Top = 873
+    Top = 604
     Width = 762
     Height = 26
     Anchors = [akLeft, akRight, akBottom]
@@ -408,7 +408,7 @@ object WindowPainter: TWindowPainter
     Left = 0
     Top = 0
     Width = 86
-    Height = 788
+    Height = 519
     Anchors = [akLeft, akTop, akBottom]
     Color = clWindow
     ParentBackground = False
@@ -2722,12 +2722,12 @@ object WindowPainter: TWindowPainter
       Left = 14
       Top = 326
       Width = 62
-      Height = 443
+      Height = 99
       BorderStyle = bsSingle
       TabOrder = 0
       DesignSize = (
         58
-        439)
+        95)
       object LineMode1Image: TImage
         Left = 0
         Top = 0
@@ -3029,8 +3029,8 @@ object WindowPainter: TWindowPainter
     end
   end
   object MainMenu: TMainMenu
-    Left = 168
-    Top = 584
+    Left = 240
+    Top = 424
     object Niewfile1: TMenuItem
       Caption = 'File'
       object New1: TMenuItem
