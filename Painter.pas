@@ -96,7 +96,20 @@ interface
       BtnCustomFig: TSpeedButton;
       BtnEllipse: TSpeedButton;
       BtnSquareCircle: TSpeedButton;
-    Panel1: TPanel;
+      DrawingOptionPanel: TPanel;
+      LineMode1Image: TImage;
+      LineMode2Image: TImage;
+      LineMode3Image: TImage;
+      LineMode4Image: TImage;
+      LineMode5Image: TImage;
+      SprayMode1Image: TImage;
+      SprayMode2Image: TImage;
+      SprayMode3Image: TImage;
+      ShapeMode1Image: TImage;
+      ShapeMode2Image: TImage;
+      ShapeMode3Image: TImage;
+      SelectionMode1Image: TImage;
+      SelectionMode2Image: TImage;
       procedure Panel1MouseMove(Sender: TObject; Shift: TShiftState; X,
         Y: Integer);
       procedure ScrollBoxMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -114,8 +127,22 @@ interface
       procedure PressToolButton(Sender: TObject);
       procedure PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
         Shift: TShiftState; X, Y: Integer);
-    procedure New1Click(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
+      procedure New1Click(Sender: TObject);
+      procedure FormCreate(Sender: TObject);
+      procedure FormShow(Sender: TObject);
+      procedure LineMode1ImageClick(Sender: TObject);
+      procedure LineMode5ImageClick(Sender: TObject);
+      procedure SprayMode3ImageClick(Sender: TObject);
+      procedure LineMode2ImageClick(Sender: TObject);
+      procedure LineMode3ImageClick(Sender: TObject);
+      procedure LineMode4ImageClick(Sender: TObject);
+      procedure SprayMode1ImageClick(Sender: TObject);
+      procedure SprayMode2ImageClick(Sender: TObject);
+      procedure ShapeMode1ImageClick(Sender: TObject);
+      procedure ShapeMode2ImageClick(Sender: TObject);
+      procedure ShapeMode3ImageClick(Sender: TObject);
+      procedure SelectionMode1ImageClick(Sender: TObject);
+      procedure SelectionMode2ImageClick(Sender: TObject);
     private
       { Private declarations }
       PointNW: TPoint;
@@ -134,25 +161,41 @@ interface
       PolPoints: Integer; // <---- count of Polygon points
       Radius: Integer; // <-- for RectCircle
       SprayX, SprayY: Integer; // <- for spray
-      SprayRadius: Integer; // <- radius for spray
+      //SprayRadius: Integer; // <- radius for spray
+      const Sprays: array[1..3] of Integer = (5, 10, 15);
       function StrToHex(str: String): string;
   //    function ImageToHex(Image: TPicture): string;
       procedure FirstLineLastLine(const Image: TPicture; var FirstLine: string; var LastLine: string);
       procedure ResizePaintBoxPanel(const Width: Integer; const Height: Integer);
       procedure ChangeMode(const SpeedButton: TSpeedButton);
+      procedure ChangeDrawingOption(const SpeedButton: TSpeedButton);
       procedure PaintPencil(const X, Y: Integer);
       //procedure PaintRectangle;
       procedure DrawLine(const X, Y: Integer);
+      procedure LoadPictures;
+      function getSprayRadius: Integer;
+      function getPenSize: Integer;
+      function getSelectMode: Integer;
+      function getShapeMode: Integer;
     public
       { Public declarations }
       XT, YT: Integer;
-      PaintMode: (pmNone, pmCustomSelection, pmRectangleSelection, pmRubber, pmInk, pmSampler, pmPencil, pmBrush, pmSpray, pmText, pmLine, pmCursive, pmRectangle, pmPolygon, pmEllipse, pmSquareCircle);
+      PaintMode: (pmNone = 1, pmCustomSelection = 2, pmRectangleSelection = 3,
+                  pmRubber = 4, pmInk = 5, pmSampler = 6, pmPencil = 7,
+                  pmBrush = 8, pmSpray = 9, pmText = 10, pmLine = 11,
+                  pmCursive = 12, pmRectangle = 13, pmPolygon = 14,
+                  pmEllipse = 15, pmSquareCircle = 16);
+      LineMode: (lmUltraThin = 1, lmThin = 2, lmMedium = 3, lmBold = 4, lmUltraBold = 5);
+      SprayMode: (smSmall = 1, smNormal = 2, smBig = 3);
+      ShapeMode: (hmCircuit = 1, hmFilledOtherColor = 2, hmFilledMainColor = 3);
+      SelectionMode: (emNotFilled = 1, emFilled = 2);
 //      procedure setPointX(const X: Integer);
 //      procedure setPointY(const Y: Integer);
       property DX: Integer read DownPointX write DownPointX;
       property DY: Integer read DownPointY write DownPointY;
       property UX: Integer read UpPointX write UpPointX;
       property UY: Integer read UpPointY write UpPointY;
+      property SprayRadius: Integer read getSprayRadius;
     end;
 
   var
@@ -263,7 +306,10 @@ implementation
 
     if (Button = TMouseButton.mbLeft) or (Button = TMouseButton.mbRight) then
     begin
-      PaintBox.Canvas.CopyMode := cmSrcCopy;
+      //PaintBox.Canvas.CopyMode := cmSrcCopy;
+      //raise Exception.Create(IntToStr(getPenSize));
+      //PaintBox.Canvas.Pen.Width := getPenSize;
+      //PaintBox.Invalidate;
       if Button = TMouseButton.mbLeft then
         begin
 
@@ -271,7 +317,10 @@ implementation
           RightBtnDown := false;
           PaintBox.Canvas.Pen.Color := DefaultColorPanel.Color;
           PaintBox.Canvas.Pen.Mode := pmNotXor;
+          PaintBox.Canvas.Pen.Style := psSolid;
           BrushColor := DefaultColorPanel.Color;
+//          PaintBox.Canvas.Pen.Width := getPenSize;
+          //raise Exception.Create(IntToStr(getPenSize));
         end
       else if Button = TMouseButton.mbRight then
         begin
@@ -610,7 +659,32 @@ implementation
 
   end;
 
-  //procedure to save canvas as bitmap, jpeg or png and saving it into a file
+  procedure TWindowPainter.LineMode1ImageClick(Sender: TObject);
+  begin
+    LineMode := lmUltraThin;
+  end;
+
+  procedure TWindowPainter.LineMode2ImageClick(Sender: TObject);
+  begin
+    LineMode := lmThin;
+  end;
+
+  procedure TWindowPainter.LineMode3ImageClick(Sender: TObject);
+  begin
+    LineMode := lmMedium;
+  end;
+
+  procedure TWindowPainter.LineMode4ImageClick(Sender: TObject);
+  begin
+    LineMode := lmBold;
+  end;
+
+  procedure TWindowPainter.LineMode5ImageClick(Sender: TObject);
+  begin
+    LineMode := lmUltraBold;
+  end;
+
+//procedure to save canvas as bitmap, jpeg or png and saving it into a file
   procedure TWindowPainter.SaveAs1Click(Sender: TObject);
   var
     b: boolean;
@@ -697,7 +771,47 @@ implementation
     Label2.Caption := IntToStr(x) + ' ' + IntToStr(y);
   end;
 
-  //procedure to change one of two default colors
+  procedure TWindowPainter.SelectionMode1ImageClick(Sender: TObject);
+  begin
+    SelectionMode := emFilled;
+  end;
+
+  procedure TWindowPainter.SelectionMode2ImageClick(Sender: TObject);
+  begin
+    SelectionMode := emNotFilled;
+  end;
+
+  procedure TWindowPainter.ShapeMode1ImageClick(Sender: TObject);
+  begin
+    ShapeMode := hmCircuit;
+  end;
+
+  procedure TWindowPainter.ShapeMode2ImageClick(Sender: TObject);
+  begin
+    ShapeMode := hmFilledOtherColor;
+  end;
+
+  procedure TWindowPainter.ShapeMode3ImageClick(Sender: TObject);
+  begin
+    ShapeMode := hmFilledMainColor;
+  end;
+
+  procedure TWindowPainter.SprayMode1ImageClick(Sender: TObject);
+  begin
+    SprayMode := smSmall;
+  end;
+
+  procedure TWindowPainter.SprayMode2ImageClick(Sender: TObject);
+  begin
+    SprayMode := smNormal;
+  end;
+
+  procedure TWindowPainter.SprayMode3ImageClick(Sender: TObject);
+  begin
+    SprayMode := smBig;
+  end;
+
+//procedure to change one of two default colors
   procedure TWindowPainter.OnClickChangeColor(Sender: TObject;
     Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
   var
@@ -801,26 +915,33 @@ implementation
     end;
   end;
 
-procedure TWindowPainter.FormCreate(Sender: TObject);
-begin
-  Screen.Cursors[1] := LoadCUrsorFromFile('./cursors/pencil.cur');
-end;
+  procedure TWindowPainter.FormCreate(Sender: TObject);
+  begin
+    Screen.Cursors[1] := LoadCursorFromFile('./cursors/pencil.cur');
+    //PressToolButton(BtnPencil);
+    //Sprays := [5, 10, 15];
+  end;
 
-procedure TWindowPainter.New1Click(Sender: TObject);
-{
-  Procedure clears PainBox' Canvas
-}
-begin
-  ResizePaintBoxPanel(400, 400);
-  PaintBox.Canvas.CopyMode := cmSrcPaint;
-  PaintBox.Canvas.Pen.Color := clWhite;
-  PaintBox.Canvas.Brush.Color := clWhite;
-  //PaintBox.Canvas.Brush.Style := bsSolid;
-  PaintBox.Canvas.Pen.Mode := pmCopy;
-  PaintBox.Canvas.Rectangle(0,0,PaintBox.Height, PaintBox.Width);
-end;
+  procedure TWindowPainter.FormShow(Sender: TObject);
+  begin
+      LoadPictures;
+  end;
 
-procedure TWindowPainter.ResizePaintBoxPanel(const Width: Integer; const Height: Integer);
+  procedure TWindowPainter.New1Click(Sender: TObject);
+  {
+    Procedure clears PainBox' Canvas
+  }
+  begin
+    ResizePaintBoxPanel(400, 400);
+    PaintBox.Canvas.CopyMode := cmSrcPaint;
+    PaintBox.Canvas.Pen.Color := clWhite;
+    PaintBox.Canvas.Brush.Color := clWhite;
+    //PaintBox.Canvas.Brush.Style := bsSolid;
+    PaintBox.Canvas.Pen.Mode := pmCopy;
+    PaintBox.Canvas.Rectangle(0,0,PaintBox.Height, PaintBox.Width);
+  end;
+
+  procedure TWindowPainter.ResizePaintBoxPanel(const Width: Integer; const Height: Integer);
   begin
     PanelPaintBox.Width := Width;
     PanelPaintBox.Height := Height;
@@ -855,7 +976,7 @@ procedure TWindowPainter.ResizePaintBoxPanel(const Width: Integer; const Height:
     else if SpeedButton = BtnSpray then
       begin
         PaintMode := pmSpray;
-        SprayRadius := 15;
+        //SprayRadius := 15;
       end
     else if SpeedButton = BtnText then
       PaintMode := pmText
@@ -891,7 +1012,65 @@ procedure TWindowPainter.ResizePaintBoxPanel(const Width: Integer; const Height:
         PaintMode := pmSquareCircle
       end;
 
+    ChangeDrawingOption(SpeedButton);
+  end;
 
+  procedure TWindowPainter.ChangeDrawingOption(const SpeedButton: TSpeedButton);
+  var
+    IsLine: Boolean;
+    IsShape: Boolean;
+    IsSpray: Boolean;
+    IsSelection: Boolean;
+  begin
+
+    IsLine := false;
+    IsShape := false;
+    IsSpray := false;
+    IsSelection := false;
+
+    if (SpeedButton = BtnRectangle) or
+       (SpeedButton = BtnEllipse)   or
+       (SpeedButton = BtnCustomFig)   or
+       (SpeedButton = BtnSquareCircle)
+    then
+      begin
+        IsShape := true;
+      end
+    else if (SpeedButton = BtnLine) or
+            (SpeedButton = BtnCursive)
+    then
+      begin
+        IsLine := true;
+      end
+    else if (SpeedButton = BtnSpray) then
+      begin
+        IsSpray := true;
+      end
+    else if (SpeedButton = BtnRectangleSelect) or
+            (SpeedButton = BtnCustomSelect) or
+            (SpeedButton = BtnText)
+    then
+      begin
+        IsSelection := true;
+      end;
+
+
+    LineMode1Image.Visible := IsLine;
+    LineMode2Image.Visible := IsLine;
+    LineMode3Image.Visible := IsLine;
+    LineMode4Image.Visible := IsLine;
+    LineMode5Image.Visible := IsLine;
+
+    SprayMode1Image.Visible := IsSpray;
+    SprayMode2Image.Visible := IsSpray;
+    SprayMode3Image.Visible := IsSpray;
+
+    ShapeMode1Image.Visible := IsShape;
+    ShapeMode2Image.Visible := IsShape;
+    ShapeMode3Image.Visible := IsShape;
+
+    SelectionMode1Image.Visible := IsSelection;
+    SelectionMode2Image.Visible := IsSelection;
   end;
 
   procedure TWindowPainter.PaintPencil(const X, Y: Integer);
@@ -901,7 +1080,113 @@ procedure TWindowPainter.ResizePaintBoxPanel(const Width: Integer; const Height:
 
   procedure TWindowPainter.DrawLine(const X: Integer; const Y: Integer);
   begin
+    PaintBox.Canvas.Pen.Width := getPenSize;
     PaintBox.Canvas.MoveTo(DX, DY);
     PaintBox.Canvas.LineTo(X, Y);
   end;
+
+  procedure TWindowPainter.LoadPictures;
+  begin
+
+    //Changes position of drawing modes
+    LineMode1Image.Width := DrawingOptionPanel.Width-5;
+    LineMode2Image.Width := DrawingOptionPanel.Width-5;
+    LineMode3Image.Width := DrawingOptionPanel.Width-5;
+    LineMode4Image.Width := DrawingOptionPanel.Width-5;
+    LineMode5Image.Width := DrawingOptionPanel.Width-5;
+
+    SprayMode1Image.Top := 5;
+    SprayMode1Image.Left := 3;
+    SprayMode2Image.Top := 5;
+    SprayMode2Image.Left := 32;
+    SprayMode3Image.Top := 40;
+    SprayMode3Image.Left := 12;
+
+    ShapeMode1Image.Top := 0;
+    ShapeMode1Image.Left := 0;
+    ShapeMode2Image.Top := 25;
+    ShapeMode2Image.Left := 0;
+    ShapeMode3Image.Top := 50;
+    ShapeMode3Image.Left := 0;
+
+    SelectionMode1Image.Top := 5;
+    SelectionMode1Image.Left := 7;
+    SelectionMode2Image.Top := 42;
+    SelectionMode2Image.Left := 7;
+
+    //hides everything
+    LineMode1Image.Visible := false;
+    LineMode2Image.Visible := false;
+    LineMode3Image.Visible := false;
+    LineMode4Image.Visible := false;
+    LineMode5Image.Visible := false;
+
+    SprayMode1Image.Visible := false;
+    SprayMode2Image.Visible := false;
+    SprayMode3Image.Visible := false;
+
+    ShapeMode1Image.Visible := false;
+    ShapeMode2Image.Visible := false;
+    ShapeMode3Image.Visible := false;
+
+    SelectionMode1Image.Visible := false;
+    SelectionMode2Image.Visible := false;
+
+    //sets default mode
+    LineMode := lmUltraThin;
+    SprayMode := smSmall;
+    ShapeMode := hmCircuit;
+    SelectionMode := emNotFilled;
+
+  end;
+
+  function TWindowPainter.getSprayRadius: Integer;
+  var
+    i: Integer;
+  begin
+    if SprayMode = smSmall then
+      i:=1
+    else if SprayMode = smNormal then
+      i:=2
+    else if SprayMode = smBig then
+      i:=3;
+
+    result := Sprays[i];
+  end;
+
+  function TWindowPainter.getPenSize: Integer;
+  var
+    i: Integer;
+  begin
+    if LineMode = lmUltraThin then
+      Result := 1
+    else if LineMode = lmThin then
+      Result := 2
+    else if LineMode = lmMedium then
+      Result := 3
+    else if LineMode = lmBold then
+      Result := 4
+    else if LineMode = lmUltraBold then
+      Result := 5;
+  end;
+
+
+  function TWindowPainter.getSelectMode: Integer;
+  begin
+    if SelectionMode = emNotFilled then
+      Result := 1
+    else if SelectionMode = emFilled then
+      Result := 2;
+  end;
+
+  function TWindowPainter.getShapeMode: Integer;
+  begin
+    if ShapeMode = hmCircuit then
+      Result := 1
+    else if ShapeMode = hmFilledOtherColor then
+      Result := 2
+    else if ShapeMode = hmFilledMainColor then
+      Result := 3;
+  end;
+
 end.
